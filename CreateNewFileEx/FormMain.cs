@@ -21,6 +21,13 @@ namespace CreateNewFileEx {
 				if(Directory.Exists(d)) {
 					dir = d;
 				}
+				try {
+					if(File.Exists(newfile)) {
+						File.Delete(newfile);
+					}
+				}
+				catch {
+				}
 			}
 			//
 			foreach(var c in Path.GetInvalidFileNameChars()) {
@@ -59,21 +66,29 @@ namespace CreateNewFileEx {
 		string title = "Create New File";
 
 		private void menuItemInstall_Click(object sender, EventArgs e) {
+			install();
+		}
+
+		void install() {
 			try {
 				using(var ext = Registry.ClassesRoot.CreateSubKey(".createnewfileex")) {
 					ext.SetValue("", "kobachi.CreateNewFileEx", RegistryValueKind.String);
 					using(var shellnew = ext.CreateSubKey("ShellNew")) {
-						shellnew.SetValue("Command", "\"" + Application.ExecutablePath + "\" \"%1\"", RegistryValueKind.String);
+						shellnew.SetValue("Command", "\"" + Application.ExecutablePath + "\" \"%1\"");
 						shellnew.SetValue("IconPath", "\"" + Application.ExecutablePath + "\",0");
 					}
 				}
 				using(var filetype = Registry.ClassesRoot.CreateSubKey("kobachi.CreateNewFileEx")) {
 					filetype.SetValue("", title, RegistryValueKind.String);
-					filetype.SetValue("NeverShowExt", "", RegistryValueKind.String);
+					filetype.SetValue("NeverShowExt", "");
 					using(var icon = filetype.CreateSubKey("DefaultIcon")) {
 						icon.SetValue("", "\"" + Application.ExecutablePath + "\",0");
 					}
+					using(var shell_open_command = filetype.CreateSubKey(@"shell\open\command")) {
+						shell_open_command.SetValue("", "\"" + Application.ExecutablePath + "\" \"%1\"");
+					}
 				}
+				MessageBox.Show(this, installCompleteMessage, installCompleteTitle, MessageBoxButtons.OK);
 			}
 			catch {
 				uninstall();
@@ -81,6 +96,7 @@ namespace CreateNewFileEx {
 		}
 
 		private void menuItemUninstall_Click(object sender, EventArgs e) {
+			uninstall();
 		}
 
 		void uninstall() {
@@ -94,6 +110,7 @@ namespace CreateNewFileEx {
 			}
 			catch {
 			}
+			MessageBox.Show(this, uninstallCompleteMessage, uninstallCompleteTitle, MessageBoxButtons.OK);
 		}
 
 		private void buttonCreate_Click(object sender, EventArgs e) {
@@ -156,6 +173,12 @@ namespace CreateNewFileEx {
 			return true;
 		}
 
+		string installCompleteTitle = "Install";
+		string installCompleteMessage = "Install was successfully completed.";
+
+		string uninstallCompleteTitle = "Uninstall";
+		string uninstallCompleteMessage = "Uninstall was successfully completed.";
+
 		private void FormMain_Load(object sender, EventArgs e) {
 			buttonSettings.Visible = UAC.IsAdministrator;
 			//
@@ -173,6 +196,10 @@ namespace CreateNewFileEx {
 				emptyfilename = l.GetLocalization("EmptyFileNameError");
 				alreadyexists = l.GetLocalization("AlreadyExistsError");
 				invalidfilename = l.GetLocalization("InvalidFileNameError");
+				installCompleteTitle = l.GetLocalization("InstallCompleteTitle");
+				installCompleteMessage = l.GetLocalization("InstallCompleteMessage");
+				uninstallCompleteTitle = l.GetLocalization("UninstallCompleteTitle");
+				uninstallCompleteMessage = l.GetLocalization("UninstallCompleteMessage");
 			}
 			//
 			var suggestfile = Path.Combine(Application.StartupPath, "suggests.lst");
